@@ -1186,11 +1186,11 @@ void MicroProfileThreadStart(MicroProfileThread* pThread, MicroProfileThreadFunc
     pthread_attr_t Attr;
     int r  = pthread_attr_init(&Attr);
     MP_ASSERT(r == 0);
-    pthread_create(pThread, &Attr, Func, 0);
+    pthread_create(pThread, &Attr, Func, nullptr);
 }
 void MicroProfileThreadJoin(MicroProfileThread* pThread)
 {
-    int r = pthread_join(*pThread, 0);
+    int r = pthread_join(*pThread, nullptr);
     MP_ASSERT(r == 0);
 }
 #elif defined(_WIN32)
@@ -1293,7 +1293,7 @@ static void MicroProfileCreateThreadLogKey()
 	pthread_key_create(&g_MicroProfileThreadLogKey, NULL);
 }
 #else
-MP_THREAD_LOCAL MicroProfileThreadLog* g_MicroProfileThreadLogThreadLocal = 0;
+MP_THREAD_LOCAL MicroProfileThreadLog* g_MicroProfileThreadLogThreadLocal = nullptr;
 #endif
 static bool g_bUseLock = false; /// This is used because windows does not support using mutexes under dll init(which is where global initialization is handled)
 
@@ -1327,14 +1327,14 @@ enum
 };
 const char* MicroProfileStringIntern(const char* pStr);
 const char* MicroProfileStringInternLower(const char* pStr);
-const char* MicroProfileStringIntern(const char* pStr, uint32_t nLen, uint32_t nInternalFlags = 0);
+const char* MicroProfileStringIntern(const char* pStr, uint32_t nLen, uint32_t nFlags = 0);
 
 void MicroProfileStringsInit(MicroProfileStrings* pStrings);
 void MicroProfileStringsDestroy(MicroProfileStrings* pStrings);
 
 MicroProfileToken MicroProfileCounterTokenInit(int nParent);
 void MicroProfileCounterTokenInitName(MicroProfileToken nToken, const char* pName);
-void MicroProfileCounterConfigInternal(MicroProfileToken, uint32_t eFormat, int64_t nLimit, uint32_t nFlags);
+void MicroProfileCounterConfigInternal(MicroProfileToken nTokeno, uint32_t eFormat, int64_t nLimit, uint32_t nFlags);
 
 
 
@@ -1462,9 +1462,9 @@ void MicroProfileInit()
 #endif
 		S.GpuQueue = MICROPROFILE_GPU_INIT_QUEUE("GPU");
 		S.pGpuGlobal = MicroProfileThreadLogGpuAllocInternal();
-		MicroProfileGpuBegin(0, S.pGpuGlobal);
+		MicroProfileGpuBegin(nullptr, S.pGpuGlobal);
 
-		S.pJsonSettings = 0;
+		S.pJsonSettings = nullptr;
 		S.nJsonSettingsPending = 0;
 		S.nJsonSettingsBufferSize = 0;
 		S.nWSWasConnected = 0;
@@ -1509,7 +1509,7 @@ void MicroProfileShutdown()
 		if(S.pJsonSettings)
 		{
 			MP_FREE(S.pJsonSettings);
-			S.pJsonSettings = 0;
+			S.pJsonSettings = nullptr;
 			S.nJsonSettingsBufferSize = 0;
 		}
 		if (S.pGPU)
@@ -1547,10 +1547,10 @@ static void* MicroProfileAutoFlipThread(void*)
 	{
 		MICROPROFILE_SCOPEI("MICROPROFILE", "AutoFlipThread", 0);
 		MicroProfileSleep(S.nAutoFlipDelay);
-		MicroProfileFlip(0);
+		MicroProfileFlip(nullptr);
 	}
 	MicroProfileOnThreadExit();
-	return 0;
+	return nullptr;
 }
 
 void MicroProfileStartAutoFlip(uint32_t nMsDelay)
@@ -1640,7 +1640,7 @@ MicroProfileThreadLog* MicroProfileCreateThreadLog(const char* pName)
 	{
 		uprintf("recycling thread logs\n");
 		//reuse the oldest.
-		MicroProfileThreadLog* pOldest = 0;
+		MicroProfileThreadLog* pOldest = nullptr;
 		uint32_t nIdleFrames = 0;
 		for(uint32_t i = 0; i < MICROPROFILE_MAX_THREADS; ++i)
 		{
@@ -1660,7 +1660,7 @@ MicroProfileThreadLog* MicroProfileCreateThreadLog(const char* pName)
 	}
 
 
-	MicroProfileThreadLog* pLog = 0;
+	MicroProfileThreadLog* pLog = nullptr;
 	if(S.nFreeListHead != -1)
 	{
 		pLog = S.Pool[S.nFreeListHead];
@@ -1703,7 +1703,7 @@ void MicroProfileOnThreadCreate(const char* pThreadName)
 	char Buffer[64];
 	g_bUseLock = true;
 	MicroProfileInit();
-	MP_ASSERT(MicroProfileGetThreadLog() == 0);
+	MP_ASSERT(MicroProfileGetThreadLog() == nullptr);
 	MicroProfileThreadLog* pLog = MicroProfileCreateThreadLog(pThreadName ? pThreadName : MicroProfileGetThreadName(Buffer));
 	(void)Buffer;
 	MP_ASSERT(pLog);
@@ -1721,7 +1721,7 @@ void MicroProfileThreadLogGpuReset(MicroProfileThreadLogGpu* pLog)
 
 MicroProfileThreadLogGpu* MicroProfileThreadLogGpuAllocInternal()
 {
-	MicroProfileThreadLogGpu* pLog = 0;
+	MicroProfileThreadLogGpu* pLog = nullptr;
 	for (uint32_t i = 0; i < S.nNumLogsGpu; ++i)
 	{
 		MicroProfileThreadLogGpu* pNextLog = S.PoolGpu[i];
@@ -1781,7 +1781,7 @@ MicroProfileThreadLog* MicroProfileGetGpuQueueLog(const char* pQueueName)
 		}
 	}
 	MP_ASSERT(0); //call MicroProfileInitGpuQueue
-	return 0;
+	return nullptr;
 }
 
 int MicroProfileInitGpuQueue(const char* pQueueName)
@@ -2010,7 +2010,7 @@ void MicroProfileGetTokenC(MicroProfileToken* pToken, const char* pGroup, const 
 const char* MicroProfileNextName(const char* pName, char* pNameOut, uint32_t* nSubNameLen)
 {
 	int nMaxLen = MICROPROFILE_NAME_MAX_LEN-1;
-	const char* pRet = 0;
+	const char* pRet = nullptr;
 	bool bDone = false;
 	uint32_t nChars = 0;
 	for(int i = 0; i < nMaxLen && !bDone; ++i)
@@ -2078,7 +2078,7 @@ MicroProfileToken MicroProfileCounterTokenInit(int nParent)
 	S.CounterInfo[nResult].eFormat = MICROPROFILE_COUNTER_FORMAT_DEFAULT;
 	S.CounterInfo[nResult].nLimit = 0;
 	S.CounterInfo[nResult].ExternalAtomic = 0;
-	S.CounterSource[nResult].pSource = 0;
+	S.CounterSource[nResult].pSource = nullptr;
 	S.CounterSource[nResult].nSourceSize = 0;
 	S.CounterInfo[nResult].nNameLen = 0;
 	S.CounterInfo[nResult].pName = nullptr;
@@ -2097,7 +2097,7 @@ MicroProfileToken MicroProfileCounterTokenInit(int nParent)
 }
 void MicroProfileCounterTokenInitName(MicroProfileToken nToken, const char* pName)
 {
-	MP_ASSERT(0 == S.CounterInfo[nToken].pName);
+	MP_ASSERT(nullptr == S.CounterInfo[nToken].pName);
 	S.CounterInfo[nToken].nNameLen = (uint16_t)strlen(pName);
 	S.CounterInfo[nToken].pName = MicroProfileStringInternLower(pName);
 }
@@ -2133,7 +2133,7 @@ MicroProfileToken MicroProfileGetCounterToken(const char* pName)
 		const char* pSubNameLower = MicroProfileStringInternLower(SubName);
 		nResult = MicroProfileGetCounterTokenByParent(nResult, pSubNameLower);
 
-	}while(pName != 0);
+	}while(pName != nullptr);
 	S.CounterInfo[nResult].nFlags |= MICROPROFILE_COUNTER_FLAG_LEAF;
 
 	MP_ASSERT((int)nResult >= 0);
@@ -2142,7 +2142,7 @@ MicroProfileToken MicroProfileGetCounterToken(const char* pName)
 
 inline void MicroProfileLogPut(MicroProfileLogEntry LE, MicroProfileThreadLog* pLog)
 {
-	MP_ASSERT(pLog != 0); //this assert is hit if MicroProfileOnCreateThread is not called
+	MP_ASSERT(pLog != nullptr); //this assert is hit if MicroProfileOnCreateThread is not called
 	MP_ASSERT(pLog->nActive == 1); // Dont put after calling thread exit
 	uint32_t nPut = pLog->nPut.load(std::memory_order_relaxed);
 	uint32_t nNextPos = (nPut+1) % MICROPROFILE_BUFFER_SIZE;
@@ -2163,7 +2163,7 @@ inline void MicroProfileLogPut(MicroProfileLogEntry LE, MicroProfileThreadLog* p
 
 inline uint64_t MicroProfileLogPutEnter(MicroProfileToken nToken_, uint64_t nTick, MicroProfileThreadLog* pLog)
 {
-	MP_ASSERT(pLog != 0); //this assert is hit if MicroProfileOnCreateThread is not called
+	MP_ASSERT(pLog != nullptr); //this assert is hit if MicroProfileOnCreateThread is not called
 	MP_ASSERT(pLog->nActive == 1);// Dont put after calling thread exit
 	uint32_t nStackPut = pLog->nStackPut;
 	if(nStackPut < MICROPROFILE_STACK_MAX)
@@ -2198,7 +2198,7 @@ inline uint64_t MicroProfileLogPutEnter(MicroProfileToken nToken_, uint64_t nTic
 }
 inline void MicroProfileLogPutLeave(MicroProfileToken nToken_, uint64_t nTick, MicroProfileThreadLog* pLog)
 {
-	MP_ASSERT(pLog != 0); //this assert is hit if MicroProfileOnCreateThread is not called
+	MP_ASSERT(pLog != nullptr); //this assert is hit if MicroProfileOnCreateThread is not called
 	MP_ASSERT(pLog->nActive);
 	MP_ASSERT(pLog->nStackPut != 0);
 	uint32_t nStackPut = --(pLog->nStackPut);
@@ -2836,7 +2836,7 @@ void MicroProfileFlip(void* pContext)
 
 #define MICROPROFILE_TICK_VALIDATE_FRAME_TIME 0
 
-void MicroProfileFlip_CB(void* pContext, MicroProfileOnFreeze FreezeCB)
+void MicroProfileFlip_CB(void* pContext, MicroProfileOnFreeze  /*FreezeCB*/)
 {
 	MICROPROFILE_COUNTER_LOCAL_UPDATE_SET_ATOMIC(g_MicroProfileBytesPerFlip);
 	#if 0
@@ -3481,7 +3481,7 @@ int MicroProfileGetEnableAllGroups()
 	return 0 == memcmp(S.nGroupMask, S.nActiveGroupsWanted, sizeof(S.nGroupMask));
 }
 
-void MicroProfileSetForceMetaCounters(int bForce)
+void MicroProfileSetForceMetaCounters(int /*bForce*/)
 {
 }
 
@@ -3491,11 +3491,11 @@ int MicroProfileGetForceMetaCounters()
 	return 0;
 }
 
-void MicroProfileEnableMetaCounter(const char* pMeta)
+void MicroProfileEnableMetaCounter(const char* /*pMeta*/)
 {
 }
 
-void MicroProfileDisableMetaCounter(const char* pMeta)
+void MicroProfileDisableMetaCounter(const char* /*pMeta*/)
 {
 }
 
@@ -5529,7 +5529,7 @@ void* MicroProfileSocketSenderThread(void*)
 	return 0;
 }
 
-void MicroProfileSocketSend(MpSocket Connection, const void* pMessage, int nLen)
+void MicroProfileSocketSend(MpSocket /*Connection*/, const void* pMessage, int nLen)
 {
 	if(S.nSocketFail || nLen <= 0)
 	{
@@ -6151,7 +6151,7 @@ void MicroProfileWebSocketSendPresets(MpSocket Connection)
 
 
 	MicroProfileParseSettings(MICROPROFILE_SETTINGS_FILE,
-		[](const char* pName, uint32_t nNameLen, const char* pJson, uint32_t nJsonLen)
+		[](const char* pName, uint32_t /*nNameLen*/, const char* pJson, uint32_t nJsonLen)
 		{
 			MicroProfileWSPrintf(",\"%s\":", pName);
 			MicroProfileWriteJsonString(pJson, nJsonLen);
@@ -6162,7 +6162,7 @@ void MicroProfileWebSocketSendPresets(MpSocket Connection)
 	MicroProfileWSPrintf("},\"r\":{");
 	bool bFirst = true;
 	MicroProfileParseSettings(MICROPROFILE_SETTINGS_FILE_BUILTIN,
-		[&bFirst](const char* pName, uint32_t nNameLen, const char* pJson, uint32_t nJsonLen)
+		[&bFirst](const char* pName, uint32_t /*nNameLen*/, const char* pJson, uint32_t nJsonLen)
 		{
 			MicroProfileWSPrintf("%c\"%s\":", bFirst ? ' ': ',', pName);
 			MicroProfileWriteJsonString(pJson, nJsonLen);
@@ -6181,7 +6181,7 @@ void MicroProfileLoadPresets(const char* pSettingsName, bool bReadOnlyPreset)
 	std::lock_guard<std::recursive_mutex> Lock(MicroProfileGetMutex());	
 	const char* pPresetFile = bReadOnlyPreset ? MICROPROFILE_SETTINGS_FILE_BUILTIN : MICROPROFILE_SETTINGS_FILE;
 	MicroProfileParseSettings(pPresetFile,
-		[=](const char* pName, uint32_t l0, const char* pJson, uint32_t l1)
+		[=](const char* pName, uint32_t /*l0*/, const char* pJson, uint32_t /*l1*/)
 		{
 			if(0 == MP_STRCASECMP(pName, pSettingsName))
 			{
@@ -6882,7 +6882,7 @@ void MicroProfileResizeWSBuf(uint32_t nMinSize = 0)
 	S.WSBuf.nBufferSize = nNewSize - 20;
 }
 
-char* MicroProfileWSPrintfCallback(const char* buf, void* user, int len)
+char* MicroProfileWSPrintfCallback(const char* buf, void* /*user*/, int len)
 {
 	MP_ASSERT(S.WSBuf.nPut == buf - S.WSBuf.pBuffer);
 	S.WSBuf.nPut += len;
@@ -13218,7 +13218,7 @@ void MicroProfileHashTableTest()
 	{
 		const char* pKey = txt[i];
 		const char* pValue = txt[i+1];
-		const char* pRes = 0;
+		const char* pRes = nullptr;
 		if(MicroProfileHashTableGetString(&Strings, pKey, &pRes))
 		{
 			if(pRes != pValue)

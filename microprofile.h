@@ -498,11 +498,11 @@ extern "C" {
 
 MICROPROFILE_API void MicroProfileInit();
 MICROPROFILE_API void MicroProfileShutdown();
-MICROPROFILE_API void MicroProfileStartAutoFlip(uint32_t nHz);
+MICROPROFILE_API void MicroProfileStartAutoFlip(uint32_t nMsDelay);
 MICROPROFILE_API void MicroProfileStopAutoFlip();
-MICROPROFILE_API MicroProfileToken MicroProfileFindToken(const char* sGroup, const char* sName);
-MICROPROFILE_API MicroProfileToken MicroProfileGetToken(const char* sGroup, const char* sName, uint32_t nColor, MicroProfileTokenType Token);
-MICROPROFILE_API void MicroProfileGetTokenC(MicroProfileToken* pToken, const char* sGroup, const char* sName, uint32_t nColor, MicroProfileTokenType Token);
+MICROPROFILE_API MicroProfileToken MicroProfileFindToken(const char* pGroup, const char* pName);
+MICROPROFILE_API MicroProfileToken MicroProfileGetToken(const char* pGroup, const char* pName, uint32_t nColor, MicroProfileTokenType Type);
+MICROPROFILE_API void MicroProfileGetTokenC(MicroProfileToken* pToken, const char* pGroup, const char* pName, uint32_t nColor, MicroProfileTokenType Type);
 MICROPROFILE_API MicroProfileToken MicroProfileGetCounterToken(const char* pName);
 MICROPROFILE_API void MicroProfileCounterAdd(MicroProfileToken nToken, int64_t nCount);
 MICROPROFILE_API void MicroProfileCounterSet(MicroProfileToken nToken, int64_t nCount);
